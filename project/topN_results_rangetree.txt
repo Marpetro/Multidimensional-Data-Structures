@@ -1,0 +1,6 @@
+Top-5 Similar Movies (Jaccard):
+Ultimate G's: Zac's Flying Dream | score=1.000
+Bending the Light | score=0.500
+The Keys of Christmas | score=0.500
+Spider's Web: A Pig's Tale | score=0.500
+Ghost Patrol | score=0.333
