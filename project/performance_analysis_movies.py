@@ -23,21 +23,17 @@ def get_top_n_similar(df, candidate_indices, query_genres, N=5):
         similarities.append((idx, score))
 
     similarities.sort(key=lambda x: x[1], reverse=True)
-     # Keep only top-N with score > 0 for sanity
+    # Keep only top-N with score > 0 for sanity
     top_n = [(idx, score) for idx, score in similarities[:N] if score > 0]
 
     return top_n
 
 
 def top_n_similarity(df, indices, text_column, query_text, N=5):
-    """
-    Επιστρέφει τα N πιο όμοια movies βάσει TF-IDF cosine similarity
-    σε ένα συγκεκριμένο textual attribute π.χ. genre_names.
-    """
 
     # Extract text only for these indices
-    subset_texts = df.iloc[indices][text_column].apply(lambda x: " ".join(x)).tolist()
-
+    #subset_texts = df.iloc[indices][text_column].apply(lambda x: " ".join(x)).tolist()
+    subset_texts = (df.iloc[indices][text_column].fillna("").apply(lambda x: " ".join(x) if isinstance(x, (list, tuple, set)) else str(x)).tolist())
     # Build corpus: first entry = query
     corpus = [query_text] + subset_texts
 
@@ -123,8 +119,10 @@ def run_kd_lsh(df, data_points, text_corpus):
     print("Combined results:", combined)
 
     # === Top-N Similarity (Jaccard) on combined results ===
-    query_genres = df.iloc[0]["genre_names"]   # μπορείς να αλλάξεις το query
-    top5 = get_top_n_similar(df, list(combined), query_genres, N=5)
+    if combined:
+        top5 = get_top_n_similar(df, list(combined), query_tokens, N=5)
+    else:
+        top5 = []
 
     print("\nTop-5 similar movies based on genres (Jaccard):")
     for idx, score in top5:
@@ -186,12 +184,18 @@ def run_quadtree_lsh(df, data_points, text_corpus):
     lsh_indices = lsh.query(query_tokens)
     lsh_query_time = time.perf_counter() - start
 
+    print(f"LSH build time: {lsh_build_time:.4f}s")
+    print(f"LSH query time: {lsh_query_time:.4f}s")
+    print(f"LSH returned {len(lsh_indices)} candidates")
+
     combined = set(qt_results).intersection(lsh_indices)
     print("Combined count:", len(combined))
 
     # Top-N Jaccard
-    query_genres = query_tokens
-    top5 = get_top_n_similar(df, list(combined), query_genres, N=5)
+    if combined:
+        top5 = get_top_n_similar(df, list(combined), query_tokens, N=5)
+    else:
+        top5 = []
 
     with open("topN_results_quadtree.txt", "w", encoding="utf-8") as f:
         f.write("Top-5 Similar Movies (Jaccard):\n")
@@ -204,11 +208,6 @@ def run_quadtree_lsh(df, data_points, text_corpus):
         f.write(f"LSH Build Time: {lsh_build_time}\n")
         f.write(f"LSH Query Time: {lsh_query_time}\n")
         f.write(f"Results Found: {len(combined)}\n")
-
-    print(f"LSH build time: {lsh_build_time:.4f}s")
-    print(f"LSH query time: {lsh_query_time:.4f}s")
-    print(f"LSH returned {len(lsh_indices)} candidates")
-
 
     return qt_build_time, qt_range_time, lsh_build_time, lsh_query_time, len(combined)
 
@@ -253,11 +252,20 @@ def run_range_lsh(df, data_points, text_corpus):
     lsh_indices = lsh.query(query_tokens)
     lsh_query_time = time.perf_counter() - start
 
+    print(f"LSH build time: {lsh_build_time:.4f}s")
+    print(f"LSH query time: {lsh_query_time:.4f}s")
+    print(f"LSH returned {len(lsh_indices)} candidates")
+
+
     combined = set(rt_results).intersection(lsh_indices)
     print("Combined count:", len(combined))
 
     # Top-N Jaccard
-    top5 = get_top_n_similar(df, list(combined), query_tokens, N=5)
+    if combined:
+        top5 = get_top_n_similar(df, list(combined), query_tokens, N=5)
+    else:
+        top5 = []
+
 
     with open("topN_results_rangetree.txt", "w", encoding="utf-8") as f:
         f.write("Top-5 Similar Movies (Jaccard):\n")
@@ -269,7 +277,7 @@ def run_range_lsh(df, data_points, text_corpus):
         f.write(f"Range Execution Time: {rt_range_time}\n")
         f.write(f"LSH Build Time: {lsh_build_time}\n")
         f.write(f"LSH Query Time: {lsh_query_time}\n")
-        f.write(f"Results Found: {len(combined)}\n")
+        f.write(f"Results Found: {len(combined)}\n")  
 
     return rt_build_time, rt_range_time, lsh_build_time, lsh_query_time, len(combined)
 
@@ -313,11 +321,18 @@ def run_rtree_lsh(df, data_points, text_corpus):
     lsh_indices = lsh.query(query_tokens)
     lsh_query_time = time.perf_counter() - start
 
+    print(f"LSH build time: {lsh_build_time:.4f}s")
+    print(f"LSH query time: {lsh_query_time:.4f}s")
+    print(f"LSH returned {len(lsh_indices)} candidates") 
+
     combined = set(rtree_results).intersection(lsh_indices)
     print("Combined count:", len(combined))
 
     # Top-N Jaccard
-    top5 = get_top_n_similar(df, list(combined), query_tokens, N=5)
+    if combined:
+        top5 = get_top_n_similar(df, list(combined), query_tokens, N=5)
+    else:
+        top5 = []   
 
     with open("topN_results_rtree.txt", "w", encoding="utf-8") as f:
         f.write("Top-5 Similar Movies (Jaccard):\n")
@@ -330,12 +345,6 @@ def run_rtree_lsh(df, data_points, text_corpus):
         f.write(f"LSH Build Time: {lsh_build_time}\n")
         f.write(f"LSH Query Time: {lsh_query_time}\n")
         f.write(f"Results Found: {len(combined)}\n")
-
-
-        print(f"LSH build time: {lsh_build_time:.4f}s")
-        print(f"LSH query time: {lsh_query_time:.4f}s")
-        print(f"LSH returned {len(lsh_indices)} candidates")
-
 
     return rt_build_time, rtree_range_time, lsh_build_time, lsh_query_time, len(combined)
 
