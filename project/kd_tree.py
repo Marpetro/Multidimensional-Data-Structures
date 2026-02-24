@@ -12,11 +12,6 @@ class KDNode:
 
 
 class KDTree:
-    """
-    KD-tree που χτίζεται πάνω σε items = [(vector, idx), ...]
-    και επιστρέφει indices από range queries.
-    """
-
     def __init__(self, items: List[Item], dimensions: List[str]):
         self.dimensions = dimensions
         self.k = len(dimensions)

@@ -7,11 +7,7 @@ from quad_tree import QuadTree
 import time
 from r_tree import RTree
 from range_tree import RangeTree
-
 from similarity import jaccard_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
 
 #similarity
 def get_top_n_similar(df, candidate_indices, query_genres, N=5):
@@ -29,54 +25,12 @@ def get_top_n_similar(df, candidate_indices, query_genres, N=5):
     return top_n
 
 
-def top_n_similarity(df, indices, text_column, query_text, N=5):
-
-    # Extract text only for these indices
-    #subset_texts = df.iloc[indices][text_column].apply(lambda x: " ".join(x)).tolist()
-    subset_texts = (df.iloc[indices][text_column].fillna("").apply(lambda x: " ".join(x) if isinstance(x, (list, tuple, set)) else str(x)).tolist())
-    # Build corpus: first entry = query
-    corpus = [query_text] + subset_texts
-
-    # TF-IDF
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform(corpus)
-
-    # Compute cosine similarity of query vs all
-    sims = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
-
-    # Top N indices (descending)
-    top_idxs = sims.argsort()[::-1][:N]
-    top_scores = sims[top_idxs]
-
-    # Map back to original movie indices
-    original_indices = [indices[i] for i in top_idxs]
-
-    results = []
-    for idx, score in zip(original_indices, top_scores):
-        title = df.iloc[idx]["title"]
-        results.append((idx, title, score))
-
-    return results
-
-
 def run_kd_lsh(df, data_points, text_corpus):
     print("=== KD-Tree + LSH ===")
 
     # 1. Ορισμός 5D range bounds
-    lower_bounds = [
-        2000,
-        3.0,
-        3.0,
-        30.0,
-        df["budget"].quantile(0.25)
-    ]
-    upper_bounds = [
-        2020,
-        6.0,
-        5.0,
-        60.0,
-        df["budget"].quantile(0.75)
-    ]
+    lower_bounds = [2000, 3.0, 3.0, 30.0, df["budget"].quantile(0.25)]
+    upper_bounds = [2020, 6.0, 5.0, 60.0, df["budget"].quantile(0.75)]
 
     # 2. Build KD-tree
     start = time.perf_counter()

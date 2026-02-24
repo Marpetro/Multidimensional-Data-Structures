@@ -3,9 +3,7 @@ from collections import defaultdict
 from typing import List, Iterable, Dict, Tuple
 
 class MinHashLSH:
-    """
-    MinHash LSH για Jaccard similarity πάνω σε σύνολα tokens (π.χ. genre_names).
-    """
+    """ MinHash LSH για Jaccard similarity"""
 
     def __init__(self, num_perm: int = 80, num_bands: int = 20, seed: int = 42):
         assert num_perm % num_bands == 0, "num_perm must be divisible by num_bands"
